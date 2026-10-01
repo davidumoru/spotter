@@ -1,0 +1,19 @@
+{
+  "name": "spotter",
+  "private": true,
+  "description": "Spotter: an AI fitness coach for Fire TV that uses your phone as the camera.",
+  "license": "MIT",
+  "workspaces": [
+    "packages/protocol",
+    "server",
+    "apps/phone"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev:server": "npm run dev -w server",
+    "dev:phone": "npm run dev -w apps/phone",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  }
+}
