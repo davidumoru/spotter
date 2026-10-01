@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b0f14" />
+    <title>Spotter</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <main id="join" class="screen">
+      <h1>Spotter</h1>
+      <p>Enter the code shown on your TV.</p>
+      <form id="join-form">
+        <input id="code" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="off" placeholder="0000" required />
+        <button type="submit">Connect</button>
+      </form>
+      <p id="join-error" class="error" role="alert"></p>
+    </main>
+
+    <main id="workout" class="screen" hidden>
+      <div class="stage">
+        <video id="video" playsinline muted></video>
+        <canvas id="overlay"></canvas>
+      </div>
+      <footer class="hud">
+        <div><span class="label">Reps</span><span id="reps" class="value">0</span></div>
+        <div><span class="label">Knee</span><span id="angle" class="value">--°</span></div>
+        <div><span class="label">Status</span><span id="status" class="value small">Starting…</span></div>
+      </footer>
+    </main>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

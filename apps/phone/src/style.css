@@ -1,0 +1,25 @@
+:root {
+  --bg: #0b0f14;
+  --fg: #f5f7fa;
+  --muted: #8a94a3;
+  --accent: #ff6a1a;
+  --danger: #ff5c5c;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); font: 16px/1.4 -apple-system, system-ui, sans-serif; }
+.screen { min-height: 100%; display: flex; flex-direction: column; }
+#join { justify-content: center; align-items: center; gap: 12px; padding: 24px; text-align: center; }
+#join h1 { font-size: 40px; margin: 0; letter-spacing: -0.02em; }
+#join p { color: var(--muted); margin: 0; }
+#join-form { display: flex; flex-direction: column; gap: 12px; width: min(320px, 100%); margin-top: 12px; }
+#code { font-size: 40px; text-align: center; letter-spacing: 0.3em; padding: 12px; border-radius: 12px; border: 1px solid #2a3340; background: #121821; color: var(--fg); font-variant-numeric: tabular-nums; }
+button { font-size: 18px; font-weight: 600; padding: 14px; border: 0; border-radius: 12px; background: var(--accent); color: #fff; }
+.error { color: var(--danger); min-height: 1.4em; }
+.stage { position: relative; flex: 1; overflow: hidden; background: #000; }
+.stage video, .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+.hud { display: grid; grid-template-columns: 1fr 1fr 1.4fr; gap: 8px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: #121821; }
+.hud div { display: flex; flex-direction: column; }
+.label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.value { font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.value.small { font-size: 16px; font-weight: 600; padding-top: 8px; }
