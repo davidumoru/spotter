@@ -88,3 +88,23 @@ Severity: 🔴 blocker · 🟡 slowed me down · 🟢 minor / polish
 - **Severity:** 🟢
 - **Workaround:** Moved it by hand.
 - **Suggestion:** Insert after the last existing `[[needs.*]]` entry, or print the snippet and let the developer place it.
+
+## 2026-10-23: Vega Jest preset crashes on `useWindowDimensions`
+
+- **Task:** Scale a 1920×1080 TV layout to the device with `useWindowDimensions`, keeping the template's Jest test green.
+- **Steps:** Used `useWindowDimensions()` in `App.tsx` and ran `npx jest` with the template's `@amazon-devices/react-native-kepler` preset.
+- **Expected:** The preset's `Dimensions` mock supports the hook, as React Native's own Jest setup does.
+- **Actual:** `TypeError: Cannot read properties of undefined (reading 'remove')` at `react-native-kepler/Libraries/Utilities/useWindowDimensions.js:43`. The mocked `Dimensions.addEventListener` returns no subscription, so every component using this core hook fails on unmount. `jest.spyOn(ReactNative, 'useWindowDimensions')` doesn't help, because of the `moduleNameMapper` indirection.
+- **Severity:** 🟡
+- **Workaround:** `jest.mock('@amazon-devices/react-native-kepler/Libraries/Utilities/useWindowDimensions', ...)` in the test.
+- **Suggestion:** Return `{remove() {}}` from the mocked `addEventListener` in the preset, and add a test to the `helloWorld` template that renders a component using `useWindowDimensions`.
+
+## 2026-10-23: No reliable way to screenshot the Vega Virtual Device
+
+- **Task:** Capture TV screens for the README and demo without capturing my whole desktop.
+- **Steps:** Looked for `vega device screenshot` (it doesn't exist). Found `screenshooter` in `vega device shell`, but a later shell session failed with `No running instances of com.amazon.dev.shell.service found`. The VVD window isn't exposed to macOS window-ID capture either.
+- **Expected:** A `vega device screenshot <out.png>` command, like `adb exec-out screencap`.
+- **Actual:** Fell back to cropping full-screen captures, which grabbed whatever window was on top while I was using the machine.
+- **Severity:** 🟡 (every app developer needs store screenshots)
+- **Workaround:** Record the VVD window with the macOS screen recorder for the demo.
+- **Suggestion:** Add `vega device screenshot` (and `screenrecord`), with a matching button in the VVD window.
