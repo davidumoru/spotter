@@ -68,3 +68,23 @@ Severity: 🔴 blocker · 🟡 slowed me down · 🟢 minor / polish
 - **Severity:** 🟡 (security hygiene)
 - **Workaround:** Don't paste doctor output publicly without scrubbing it.
 - **Suggestion:** Allowlist the relevant variables (PATH, KEPLER_SDK_PATH, NODE, JAVA_HOME…) or redact names that match `*TOKEN*|*KEY*|*SECRET*`. Separately, there's no `vega platform list` / `vega sdk os-versions` command to discover valid `--os-version` values. I found `1.2` only from the dry-run default.
+
+## 2026-10-01: `vega build` rewrites a tracked `manifest.toml`
+
+- **Task:** Make a clean, reviewable PR to `react-native-multi-tv-app-sample` with the fixes above.
+- **Steps:** Edited `apps/vega/manifest.toml`, ran `yarn build:vega:debug`, then `git diff`.
+- **Expected:** The build leaves source files alone.
+- **Actual:** The build (KMMB, per the `update-manifest` output: "SDK package module entries are regenerated at build time") inserted 14 `[[needs.module]]` entries and about 14 blank lines into the committed manifest, under the `## Offers` comment header. `buildinfo.json` (tracked in the sample) is also modified on every build. Any contributor who builds before committing ends up with noisy, misleading diffs.
+- **Severity:** 🟡
+- **Workaround:** Ran `git checkout` on the manifest and re-applied only the intended edits after building.
+- **Suggestion:** Write generated module entries to a build-output copy of the manifest, not the source file. Otherwise document that the file is generated, and gitignore `buildinfo.json` in samples.
+
+## 2026-10-01: `vega project update-manifest` inserts entries in the wrong section
+
+- **Task:** Add the required `[os.version]` to an existing, well-commented manifest.
+- **Steps:** `vega project update-manifest --os-version 1.2 --os-min 1.2`.
+- **Expected:** `[[needs.module]] /com.amazon.vega.os@IVega_1_2` placed with the other `needs` entries.
+- **Actual:** It was appended under the `## Offers` header comment. That's valid TOML, but it reads as an "offers" entry to humans and reviewers.
+- **Severity:** 🟢
+- **Workaround:** Moved it by hand.
+- **Suggestion:** Insert after the last existing `[[needs.*]]` entry, or print the snippet and let the developer place it.
