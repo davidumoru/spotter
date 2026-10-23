@@ -20,7 +20,7 @@ camera → MediaPipe Pose (on device)     pairs TV ↔ phone by 4-digit room    
 ```
 
 - **Phone (`apps/phone`)**: Vite + TypeScript web app. [MediaPipe Pose Landmarker](https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker) runs in the browser. Spotter measures the hip-knee-ankle angle on the more visible leg, smooths it, and counts a rep when you go below 100° and come back above 160°. A dip below 140° that never reaches depth counts as a half rep and triggers "Go lower". Video never leaves the phone; only numbers are sent.
-- **Server (`server`)**: Node WebSocket relay. The TV gets a room code and a join URL (encoded as a QR code). When the phone finishes a set, the server sends the rep log to **Amazon Bedrock** (Converse API, Amazon Nova Lite by default) for a 2–3 sentence coaching summary. If Bedrock is unavailable, it falls back to a rule-based coach so the app always works.
+- **Server (`server`)**: Node WebSocket relay. The TV gets a room code and a join URL (encoded as a QR code). When the phone finishes a set, the server sends the rep log to **Amazon Bedrock** (Converse API, Amazon Nova Lite by default) for a two or three sentence coaching summary. If Bedrock is unavailable, it falls back to a rule-based coach so the app always works.
 - **TV (`apps/tv`)**: React Native 0.83 app for **Vega OS**, generated from the Vega SDK `helloWorld` template. Pairing screen with a QR code, live screen (rep count, depth bar, status, cue banner) and summary screen. The UI is laid out on a 1920×1080 canvas and scaled to the device.
 - **Protocol (`packages/protocol`)**: shared, dependency-free TypeScript message types used by all three.
 
