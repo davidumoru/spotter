@@ -1,11 +1,14 @@
 import {createServer} from 'node:http';
 import {WebSocketServer, WebSocket} from 'ws';
 import {
+  PHONE_PORT,
   SERVER_PORT,
   WS_PATH,
   type ClientMessage,
   type ServerMessage,
 } from '@spotter/protocol';
+import {summarize} from './coach';
+import {lanAddress} from './lan';
 
 interface Room {
   tv?: WebSocket;
@@ -16,6 +19,11 @@ const rooms = new Map<string, Room>();
 
 function send(ws: WebSocket | undefined, msg: ServerMessage) {
   if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg));
+}
+
+function joinUrl(code: string): string | undefined {
+  const base = process.env.PHONE_URL ?? (lanAddress() && `https://${lanAddress()}:${PHONE_PORT}`);
+  return base && `${base}/?code=${code}`;
 }
 
 function newCode(): string {
@@ -53,7 +61,7 @@ wss.on('connection', (ws) => {
         role = 'tv';
         code = newCode();
         rooms.set(code, {tv: ws});
-        send(ws, {type: 'room', code});
+        send(ws, {type: 'room', code, joinUrl: joinUrl(code)});
         console.log(`[room ${code}] tv connected`);
         break;
       }
@@ -74,6 +82,18 @@ wss.on('connection', (ws) => {
       case 'state': {
         if (role !== 'phone' || !code) return;
         send(rooms.get(code)?.tv, {type: 'state', state: msg.state});
+        break;
+      }
+      case 'finish': {
+        if (role !== 'phone' || !code) return;
+        const roomCode = code;
+        send(rooms.get(roomCode)?.tv, {type: 'analyzing'});
+        summarize(msg.stats).then((summary) => {
+          const room = rooms.get(roomCode);
+          send(room?.tv, {type: 'summary', summary});
+          send(room?.phone, {type: 'summary', summary});
+          console.log(`[room ${roomCode}] summary via ${summary.source}`);
+        });
         break;
       }
     }
