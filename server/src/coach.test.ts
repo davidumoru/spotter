@@ -1,6 +1,17 @@
-import {describe, expect, it} from 'vitest';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
 import type {WorkoutStats} from '@spotter/protocol';
-import {describeSet, localCoaching} from './coach';
+
+const send = vi.hoisted(() => vi.fn());
+vi.mock('@aws-sdk/client-bedrock-runtime', () => ({
+  BedrockRuntimeClient: class {
+    send = send;
+  },
+  ConverseCommand: class {
+    constructor(public input: unknown) {}
+  },
+}));
+
+import {describeSet, localCoaching, summarize} from './coach';
 
 const base: WorkoutStats = {
   exercise: 'squat',
@@ -46,5 +57,32 @@ describe('localCoaching', () => {
   it('guides setup when nothing was counted', () => {
     const none = {...base, reps: 0, partialReps: 0, avgDepth: null, bestDepth: null, avgRepSec: null, repLog: []};
     expect(localCoaching(none)).toContain('side-on');
+  });
+});
+
+describe('summarize', () => {
+  beforeEach(() => {
+    send.mockReset();
+  });
+
+  it('returns Bedrock coaching with the set in the prompt', async () => {
+    send.mockResolvedValue({output: {message: {content: [{text: ' Great set. Sit lower. '}]}}});
+    const summary = await summarize(base);
+    expect(summary).toEqual({stats: base, coaching: 'Great set. Sit lower.', source: 'bedrock'});
+    const {input} = send.mock.calls[0][0];
+    expect(input.modelId).toBe('us.amazon.nova-lite-v1:0');
+    expect(input.messages[0].content[0].text).toBe(describeSet(base));
+  });
+
+  it('falls back to local coaching when Bedrock fails', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    send.mockRejectedValue(new Error('Error 002'));
+    const summary = await summarize(base);
+    expect(summary).toEqual({stats: base, coaching: localCoaching(base), source: 'local'});
+  });
+
+  it('falls back when Bedrock returns no text', async () => {
+    send.mockResolvedValue({output: {message: {content: []}}});
+    expect((await summarize(base)).source).toBe('local');
   });
 });
