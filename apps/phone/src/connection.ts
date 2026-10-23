@@ -1,4 +1,4 @@
-import {WS_PATH, type ClientMessage, type RepState, type ServerMessage} from '@spotter/protocol';
+import {WS_PATH, type ClientMessage, type RepState, type ServerMessage, type WorkoutStats} from '@spotter/protocol';
 
 const SEND_INTERVAL_MS = 100;
 
@@ -6,6 +6,7 @@ export class TvLink {
   private ws?: WebSocket;
   private lastSent = 0;
   private lastReps = -1;
+  private lastCueId = -1;
 
   constructor(private onMessage: (msg: ServerMessage) => void) {}
 
@@ -28,10 +29,19 @@ export class TvLink {
 
   sendState(state: RepState) {
     const now = performance.now();
-    if (state.reps === this.lastReps && now - this.lastSent < SEND_INTERVAL_MS) return;
+    const cueId = state.cue?.id ?? -1;
+    const changed = state.reps !== this.lastReps || cueId !== this.lastCueId;
+    if (!changed && now - this.lastSent < SEND_INTERVAL_MS) return;
     this.lastSent = now;
     this.lastReps = state.reps;
+    this.lastCueId = cueId;
     this.send({type: 'state', state});
+  }
+
+  finish(stats: WorkoutStats) {
+    this.lastReps = -1;
+    this.lastCueId = -1;
+    this.send({type: 'finish', stats});
   }
 
   private send(msg: ClientMessage) {

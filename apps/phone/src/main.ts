@@ -1,7 +1,8 @@
 import {DrawingUtils, FilesetResolver, PoseLandmarker} from '@mediapipe/tasks-vision';
-import type {ServerMessage} from '@spotter/protocol';
+import type {Cue, ServerMessage} from '@spotter/protocol';
 import {SquatCounter} from './squat';
 import {TvLink} from './connection';
+import {Voice} from './voice';
 
 const WASM_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm';
 const MODEL_URL =
@@ -18,12 +19,26 @@ const canvas = $<HTMLCanvasElement>('overlay');
 const repsEl = $<HTMLSpanElement>('reps');
 const angleEl = $<HTMLSpanElement>('angle');
 const statusEl = $<HTMLSpanElement>('status');
+const cueEl = $<HTMLDivElement>('cue');
+const finishBtn = $<HTMLButtonElement>('finish');
+const summaryEl = $<HTMLElement>('summary');
+const summaryText = $<HTMLParagraphElement>('summary-text');
+const againBtn = $<HTMLButtonElement>('again');
 
-const counter = new SquatCounter();
+const voice = new Voice();
 const link = new TvLink(onServerMessage);
+let counter = new SquatCounter();
+let paused = false;
+let lastCueId = -1;
+let cueTimer: ReturnType<typeof setTimeout> | undefined;
+
+const presetCode = new URLSearchParams(location.search).get('code');
+if (presetCode) codeInput.value = presetCode;
 
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
+  // iOS only allows speech that was first unlocked synchronously inside a user gesture.
+  voice.unlock();
   joinError.textContent = '';
   const button = form.querySelector('button')!;
   button.disabled = true;
@@ -39,10 +54,37 @@ form.addEventListener('submit', async (e) => {
   }
 });
 
+finishBtn.addEventListener('click', () => {
+  paused = true;
+  summaryText.textContent = 'Analyzing your set…';
+  summaryEl.hidden = false;
+  link.finish(counter.stats());
+});
+
+againBtn.addEventListener('click', () => {
+  counter = new SquatCounter();
+  lastCueId = -1;
+  summaryEl.hidden = true;
+  paused = false;
+  voice.say("Let's go");
+});
+
 function onServerMessage(msg: ServerMessage) {
   if (msg.type === 'peer' && msg.role === 'tv' && !msg.connected) {
     statusEl.textContent = 'TV disconnected';
   }
+  if (msg.type === 'summary') {
+    summaryText.textContent = msg.summary.coaching;
+    voice.say(msg.summary.coaching);
+  }
+}
+
+function showCue(cue: Cue) {
+  cueEl.textContent = cue.text;
+  cueEl.className = `cue show ${cue.tone}`;
+  clearTimeout(cueTimer);
+  cueTimer = setTimeout(() => cueEl.classList.remove('show'), 1500);
+  voice.say(cue.text);
 }
 
 async function startWorkout() {
@@ -75,11 +117,17 @@ async function startWorkout() {
         draw.drawLandmarks(landmarks, {color: '#ffffff', radius: 3});
       }
 
-      const state = counter.update(landmarks);
-      repsEl.textContent = String(state.reps);
-      angleEl.textContent = state.tracking ? `${state.kneeAngle}°` : '--°';
-      statusEl.textContent = state.tracking ? (state.phase === 'down' ? 'Down' : 'Up') : 'Step into frame';
-      link.sendState(state);
+      if (!paused) {
+        const state = counter.update(landmarks);
+        repsEl.textContent = String(state.reps);
+        angleEl.textContent = state.tracking ? `${state.kneeAngle}°` : '--°';
+        statusEl.textContent = state.tracking ? (state.phase === 'down' ? 'Down' : 'Up') : 'Step into frame';
+        if (state.cue && state.cue.id !== lastCueId) {
+          lastCueId = state.cue.id;
+          showCue(state.cue);
+        }
+        link.sendState(state);
+      }
     }
     requestAnimationFrame(loop);
   };

@@ -23,11 +23,18 @@
         <video id="video" playsinline muted></video>
         <canvas id="overlay"></canvas>
       </div>
+      <div id="cue" class="cue" aria-live="polite"></div>
       <footer class="hud">
         <div><span class="label">Reps</span><span id="reps" class="value">0</span></div>
         <div><span class="label">Knee</span><span id="angle" class="value">--°</span></div>
         <div><span class="label">Status</span><span id="status" class="value small">Starting…</span></div>
+        <button id="finish" type="button" class="finish">Finish</button>
       </footer>
+      <section id="summary" class="summary" hidden>
+        <h2>Set complete</h2>
+        <p id="summary-text">Analyzing your set…</p>
+        <button id="again" type="button">Start a new set</button>
+      </section>
     </main>
 
     <script type="module" src="/src/main.ts"></script>

@@ -1,4 +1,4 @@
-import type {Phase, RepState} from '@spotter/protocol';
+import type {Cue, CueTone, Phase, RepRecord, RepState, WorkoutStats} from '@spotter/protocol';
 
 export interface Point {
   x: number;
@@ -12,6 +12,8 @@ const RIGHT = {hip: 24, knee: 26, ankle: 28};
 const MIN_VISIBILITY = 0.5;
 const DOWN_ANGLE = 100;
 const UP_ANGLE = 160;
+const PARTIAL_ANGLE = 140;
+const DEEP_ANGLE = 85;
 const SMOOTHING = 0.4;
 
 export function angleAt(a: Point, b: Point, c: Point): number {
@@ -24,9 +26,20 @@ export function angleAt(a: Point, b: Point, c: Point): number {
 
 export class SquatCounter {
   private reps = 0;
+  private partialReps = 0;
   private phase: Phase = 'up';
   private smoothed: number | null = null;
   private tracking = false;
+  private lowest = 180;
+  private repStart: number | null = null;
+  private repLog: RepRecord[] = [];
+  private cue?: Cue;
+  private cueId = 0;
+  private readonly startedAt: number;
+
+  constructor(private now: () => number = Date.now) {
+    this.startedAt = now();
+  }
 
   update(landmarks: Point[] | undefined): RepState {
     const side = landmarks && pickSide(landmarks);
@@ -37,13 +50,20 @@ export class SquatCounter {
 
     this.tracking = true;
     const raw = angleAt(landmarks[side.hip], landmarks[side.knee], landmarks[side.ankle]);
-    this.smoothed = this.smoothed === null ? raw : this.smoothed + SMOOTHING * (raw - this.smoothed);
+    const angle = this.smoothed === null ? raw : this.smoothed + SMOOTHING * (raw - this.smoothed);
+    this.smoothed = angle;
 
-    if (this.phase === 'up' && this.smoothed < DOWN_ANGLE) {
+    if (angle < UP_ANGLE && this.repStart === null) this.repStart = this.now();
+    this.lowest = Math.min(this.lowest, angle);
+
+    if (this.phase === 'up' && angle < DOWN_ANGLE) {
       this.phase = 'down';
-    } else if (this.phase === 'down' && this.smoothed > UP_ANGLE) {
+    } else if (angle > UP_ANGLE) {
+      if (this.phase === 'down') this.completeRep();
+      else if (this.lowest < PARTIAL_ANGLE) this.partialRep();
       this.phase = 'up';
-      this.reps += 1;
+      this.lowest = 180;
+      this.repStart = null;
     }
     return this.state();
   }
@@ -55,8 +75,45 @@ export class SquatCounter {
       phase: this.phase,
       kneeAngle: Math.round(this.smoothed ?? 180),
       tracking: this.tracking,
-      ts: Date.now(),
+      cue: this.cue,
+      ts: this.now(),
     };
+  }
+
+  stats(): WorkoutStats {
+    const depths = this.repLog.map((r) => r.depth);
+    const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
+    const avgDepth = avg(depths);
+    const avgRepMs = avg(this.repLog.map((r) => r.durationMs));
+    return {
+      exercise: 'squat',
+      reps: this.reps,
+      partialReps: this.partialReps,
+      durationSec: Math.round((this.now() - this.startedAt) / 1000),
+      avgDepth: avgDepth === null ? null : Math.round(avgDepth),
+      bestDepth: depths.length ? Math.round(Math.min(...depths)) : null,
+      avgRepSec: avgRepMs === null ? null : Math.round(avgRepMs / 100) / 10,
+      repLog: this.repLog,
+    };
+  }
+
+  private completeRep() {
+    this.reps += 1;
+    this.repLog.push({
+      depth: Math.round(this.lowest),
+      durationMs: this.repStart === null ? 0 : this.now() - this.repStart,
+    });
+    this.setCue(this.lowest <= DEEP_ANGLE ? `${this.reps}! Great depth` : String(this.reps), 'good');
+  }
+
+  private partialRep() {
+    this.partialReps += 1;
+    this.setCue('Go lower', 'warn');
+  }
+
+  private setCue(text: string, tone: CueTone) {
+    this.cueId += 1;
+    this.cue = {id: this.cueId, text, tone};
   }
 }
 
