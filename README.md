@@ -2,7 +2,7 @@
 
 An AI fitness coach for Fire TV that uses your phone as the camera.
 
-Scan the QR code on the TV, prop your iPhone up and start squatting. The phone tracks your pose on device, counts reps, calls out half reps and streams it all to the TV. When you finish a set, Amazon Bedrock gives you a short coaching summary.
+Scan the QR code on the TV, prop your iPhone up and start squatting. The phone tracks your pose on device, counts reps, calls out half reps and streams it all to the TV. When you finish a set, the TV shows a short coaching summary, written by Amazon Bedrock (Nova Lite) when it's available and by a built-in coach otherwise.
 
 Built for the Fire TV track of the [Amazon Developer Hackathon](https://amazonappdev2026.devpost.com/).
 
