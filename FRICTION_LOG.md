@@ -108,3 +108,13 @@ Severity: 🔴 blocker · 🟡 slowed me down · 🟢 minor / polish
 - **Severity:** 🟡 (every app developer needs store screenshots)
 - **Workaround:** Record the VVD window with the macOS screen recorder for the demo.
 - **Suggestion:** Add `vega device screenshot` (and `screenrecord`), with a matching button in the VVD window.
+
+## 2026-10-23: Bedrock "Error 002" with no explanation
+
+- **Task:** Call Amazon Nova Lite through the Bedrock Converse API for post-set coaching.
+- **Steps:** Created an IAM user with `AmazonBedrockFullAccess` and ran `aws bedrock-runtime converse` with `us.amazon.nova-lite-v1:0` in `us-east-1`. Also tried `amazon.nova-lite-v1:0`, `us.amazon.nova-micro-v1:0` and `us-west-2`.
+- **Expected:** Models are enabled on first use now that the Model access page is retired, so the call should succeed.
+- **Actual:** `ValidationException: Error 002: Access to Bedrock models is not allowed for this account`, for every model and region. `list-foundation-models` works, so the credentials and IAM policy are fine. The error doesn't say why the account is blocked or what to do about it.
+- **Severity:** 🔴 (blocked the AWS Builder integration on deadline day)
+- **Workaround:** The server falls back to a built-in rule-based coach.
+- **Suggestion:** Name the cause in the error (billing verification, new-account hold, region) and link to the fix. Show the same reason in the Bedrock console.
